@@ -1,0 +1,54 @@
+body {
+    padding: 20px;
+}
+
+.page-header h3 {
+    margin-top: 20px;
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+.table {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.resultContainer {
+    margin-top: 30px;
+}
+
+.resultContainer h4 {
+    margin-top: 20px;
+}
+
+.generateTable, .generateResult {
+    margin: 10px;
+}
+
+.table-bordered {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.table-bordered th, .table-bordered td {
+    text-align: center;
+}
+
+.alert {
+    margin-top: 20px;
+}
+
+#multipleWarehousesResult {
+    margin-top: 20px;
+}
+
+#multipleWarehousesResult table {
+    margin: 10px auto;
+}
+
+#warehouseTable, #itemTable {
+    margin-bottom: 30px;
+}
