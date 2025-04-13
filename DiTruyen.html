@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bài Toán Balo</title>
+    <link rel="stylesheet" href="DiTruyen.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="title">🧳 Bài Toán Balo</h1>
+      <label for="values">🎯 Giá trị (cách nhau bởi dấu phẩy):</label>
+      <input type="text" id="values" placeholder="1, 2, 5, 8, ..." />
+
+      <label for="weights">⚖️ Trọng lượng (cách nhau bởi dấu phẩy):</label>
+      <input type="text" id="weights" placeholder="1, 2, 4, 10, ..." />
+
+      <label for="maxWeight">📦 Trọng lượng tối đa của túi:</label>
+      <input type="number" id="maxWeight" placeholder="100" />
+
+      <label for="populationSize">👥 Kích thước quần thể:</label>
+      <input type="number" id="populationSize" placeholder="300" />
+
+      <label for="mutationRate">🔄 Tỉ lệ đột biến:</label>
+      <input type="number" id="mutationRate" step="0.01" placeholder="0.2" />
+
+      <label for="generations">⏳ Số thế hệ:</label>
+      <input type="number" id="generations" placeholder="500" />
+
+      <button onclick="runGeneticAlgorithm()" class="run-button">
+        🚀 Chạy thuật toán
+      </button>
+
+      <h2 class="result-title">📊 Kết quả:</h2>
+      <textarea id="result" readonly></textarea>
+    </div>
+    <script src="DiTruyen.js"></script>
+  </body>
+</html>
