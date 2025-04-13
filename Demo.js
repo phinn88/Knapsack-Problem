@@ -1,6 +1,6 @@
 var numWarehouses;
 var numItems;
-var warehouses = []; // Lưu danh sách kho: [{capacity, remainingCapacity, allocatedItems}, ...]
+var warehouses = []; // Lưu danh sách kho: [{capacity, remainingCapacity, allocatedItems, index}, ...]
 var items = []; // Lưu danh sách hàng hóa: [{id, profit, weight}, ...]
 
 // Tạo bảng nhập liệu cho kho và hàng hóa
@@ -44,13 +44,17 @@ function createInputTables() {
     var itemFooter = '</table>';
     document.getElementById('itemTable').innerHTML = itemHeader + itemBody + itemFooter;
 
-    // Xóa dữ liệu cũ
+    // Xóa dữ liệu cũ và ẩn các phần nhập liệu
     warehouses = [];
     items = [];
     document.getElementById('resultSection').style.visibility = 'hidden';
     document.getElementById('multipleWarehousesResult').innerHTML = '';
     document.getElementById('kp01ResultantProfit').innerHTML = '';
     document.getElementById('currentItemsTable').innerHTML = '';
+    document.getElementById('addItemSection').style.display = 'none';
+    document.getElementById('removeItemSection').style.display = 'none';
+    document.getElementById('addWarehouseSection').style.display = 'none';
+    document.getElementById('removeWarehouseSection').style.display = 'none';
 }
 
 // Thu thập dữ liệu và tính toán ban đầu
@@ -70,7 +74,7 @@ function generateResult() {
             alert(`Please enter a valid capacity for Warehouse ${i-1}.`);
             return;
         }
-        warehouses.push({ capacity: capacityValue, remainingCapacity: capacityValue, allocatedItems: [] });
+        warehouses.push({ capacity: capacityValue, remainingCapacity: capacityValue, allocatedItems: [], index: i-1 });
     }
 
     // Thu thập dữ liệu hàng hóa
@@ -92,6 +96,71 @@ function generateResult() {
     document.getElementById('resultSection').style.visibility = 'visible';
     manageMultipleWarehouses(true); // true: chạy Knapsack
     updateCurrentItemsTable();
+
+    // Hiển thị các phần nhập liệu thêm/xóa item và kho
+    document.getElementById('addItemSection').style.display = 'block';
+    document.getElementById('removeItemSection').style.display = 'block';
+    document.getElementById('addWarehouseSection').style.display = 'block';
+    document.getElementById('removeWarehouseSection').style.display = 'block';
+}
+
+// Thêm nhà kho mới
+function addWarehouse() {
+    var capacity = parseInt(document.getElementById('newWarehouseCapacity').value);
+
+    if (isNaN(capacity) || capacity <= 0) {
+        alert('Please enter a valid positive capacity for the new warehouse.');
+        return;
+    }
+
+    var newIndex = warehouses.length ? Math.max(...warehouses.map(w => w.index)) + 1 : 0;
+    var newWarehouse = { 
+        capacity: capacity, 
+        remainingCapacity: capacity, 
+        allocatedItems: [], 
+        index: newIndex 
+    };
+    warehouses.push(newWarehouse);
+
+    // Thử phân bổ các item Not Stored vào kho mới
+    var notStoredItems = items.filter(item => 
+        !warehouses.some(w => w.allocatedItems.some(allocated => allocated.id === item.id))
+    );
+    notStoredItems.forEach(item => {
+        if (newWarehouse.remainingCapacity >= item.weight) {
+            newWarehouse.allocatedItems.push(item);
+            newWarehouse.remainingCapacity -= item.weight;
+        }
+    });
+
+    document.getElementById('newWarehouseCapacity').value = '';
+    updateCurrentItemsTable();
+    updateWarehouseResults();
+    alert(`Warehouse ${newIndex} with capacity ${capacity} kg added${notStoredItems.length > 0 ? ' and items allocated if possible' : ''}.`);
+}
+
+// Xóa nhà kho
+function removeWarehouse() {
+    var warehouseIndex = parseInt(document.getElementById('removeWarehouseIndex').value);
+
+    if (isNaN(warehouseIndex)) {
+        alert('Please enter a valid warehouse index.');
+        return;
+    }
+
+    var warehouseIdx = warehouses.findIndex(w => w.index === warehouseIndex);
+    if (warehouseIdx === -1) {
+        alert(`Warehouse ${warehouseIndex} does not exist.`);
+        return;
+    }
+
+    // Xóa kho và để các item trong kho thành Not Stored
+    warehouses.splice(warehouseIdx, 1);
+
+    document.getElementById('removeWarehouseIndex').value = '';
+    updateCurrentItemsTable();
+    updateWarehouseResults();
+    alert(`Warehouse ${warehouseIndex} removed successfully. Items are now Not Stored; click "Recalculate Allocation" to reallocate.`);
 }
 
 // Thêm hàng hóa mới
@@ -108,15 +177,15 @@ function addItem() {
     var newItem = { id: newId, profit: profit, weight: weight };
     items.push(newItem);
 
-    // Tìm kho có đủ dung tích
+    // Tìm kho có sức chứa còn lại lớn nhất trong các kho đủ dung tích
+    var suitableWarehouses = warehouses.filter(w => w.remainingCapacity >= weight);
     var allocated = false;
-    for (var warehouse of warehouses) {
-        if (warehouse.remainingCapacity >= weight) {
-            warehouse.allocatedItems.push(newItem);
-            warehouse.remainingCapacity -= weight;
-            allocated = true;
-            break;
-        }
+    if (suitableWarehouses.length > 0) {
+        suitableWarehouses.sort((a, b) => b.remainingCapacity - a.remainingCapacity);
+        var targetWarehouse = suitableWarehouses[0];
+        targetWarehouse.allocatedItems.push(newItem);
+        targetWarehouse.remainingCapacity -= weight;
+        allocated = true;
     }
 
     document.getElementById('newItemProfit').value = '';
@@ -124,10 +193,10 @@ function addItem() {
     updateCurrentItemsTable();
     if (allocated) {
         updateWarehouseResults();
-        alert(`Item ${newId} added to a warehouse. Remaining capacities updated.`);
+        alert(`Item ${newId} added to a warehouse with largest remaining capacity.`);
     } else {
         alert(`Item ${newId} added, but no warehouse has enough capacity. Click "Recalculate Allocation" to optimize.`);
-        updateWarehouseResults(); // Cập nhật để hiển thị trạng thái hiện tại
+        updateWarehouseResults();
     }
 }
 
@@ -150,13 +219,11 @@ function removeItem() {
     items.splice(itemIndex, 1);
 
     // Xóa item khỏi kho nếu có
-    var found = false;
     for (var warehouse of warehouses) {
         var allocatedIndex = warehouse.allocatedItems.findIndex(allocated => allocated.id === itemId);
         if (allocatedIndex !== -1) {
             warehouse.allocatedItems.splice(allocatedIndex, 1);
             warehouse.remainingCapacity += item.weight;
-            found = true;
             break;
         }
     }
@@ -170,13 +237,17 @@ function removeItem() {
 // Cập nhật bảng danh sách hàng hóa hiện tại
 function updateCurrentItemsTable() {
     var tableHtml = '<table class="table table-bordered">';
-    tableHtml += '<tr><th>Item ID</th><th>Profit</th><th>Weight</th><th>Profit/Weight</th></tr>';
+    tableHtml += '<tr><th>Item ID</th><th>Profit</th><th>Weight</th><th>Profit/Weight</th><th>Status</th></tr>';
     if (items.length === 0) {
-        tableHtml += '<tr><td colspan="4">No items available</td></tr>';
+        tableHtml += '<tr><td colspan="5">No items available</td></tr>';
     } else {
         items.forEach(item => {
             var profitPerWeight = item.weight > 0 ? (item.profit / item.weight).toFixed(2) : 'N/A';
-            tableHtml += `<tr><td>${item.id}</td><td>${item.profit}</td><td>${item.weight}</td><td>${profitPerWeight}</td></tr>`;
+            var isStored = warehouses.some(warehouse => 
+                warehouse.allocatedItems.some(allocated => allocated.id === item.id)
+            );
+            var status = isStored ? 'Stored' : 'Not Stored';
+            tableHtml += `<tr><td>${item.id}</td><td>${item.profit}</td><td>${item.weight}</td><td>${profitPerWeight}</td><td>${status}</td></tr>`;
         });
     }
     tableHtml += '</table>';
@@ -186,7 +257,7 @@ function updateCurrentItemsTable() {
 // Tái tính toán phân bổ kho
 function recalculate() {
     if (warehouses.length === 0) {
-        alert('No warehouses available. Please generate input tables and calculate first.');
+        alert('No warehouses available. Please generate input tables or add a warehouse.');
         return;
     }
     if (items.length === 0) {
@@ -204,11 +275,13 @@ function updateWarehouseResults() {
     var totalValue = 0;
     var resultHtml = '<h3>Warehouse Allocation Results</h3>';
 
-    for (var [index, warehouse] of warehouses.entries()) {
+    // Sắp xếp lại kho theo index để hiển thị đúng thứ tự
+    var sortedWarehouses = [...warehouses].sort((a, b) => a.index - b.index);
+    for (var warehouse of sortedWarehouses) {
         var warehouseValue = warehouse.allocatedItems.reduce((sum, item) => sum + item.profit, 0);
         totalValue += warehouseValue;
 
-        var warehouseHtml = `<h4>Warehouse ${index + 1} (Capacity: ${warehouse.capacity} kg)</h4>`;
+        var warehouseHtml = `<h4>Warehouse ${warehouse.index} (Capacity: ${warehouse.capacity} kg)</h4>`;
         warehouseHtml += '<table class="table table-bordered">';
         warehouseHtml += '<tr><th>Item</th><th>Profit</th><th>Weight</th><th>Profit/Weight</th></tr>';
         if (warehouse.allocatedItems.length === 0) {
@@ -231,7 +304,7 @@ function updateWarehouseResults() {
     document.getElementById('resultSection').style.visibility = 'visible';
 }
 
-// Thuật toán cho nhiều kho (chỉ chạy khi cần)
+// Thuật toán cho nhiều kho
 function manageMultipleWarehouses(runKnapsack = false) {
     if (runKnapsack) {
         // Xóa phân bổ hiện tại
@@ -240,12 +313,13 @@ function manageMultipleWarehouses(runKnapsack = false) {
             warehouse.remainingCapacity = warehouse.capacity;
         }
 
+        // Sắp xếp kho theo dung tích giảm dần để ưu tiên kho lớn
+        var sortedWarehouses = [...warehouses].sort((a, b) => b.capacity - a.capacity);
         var values = items.map(item => item.profit);
         var weights = items.map(item => item.weight);
-        var itemIds = items.map(item => item.id);
         var tempItems = [...items];
 
-        for (var [index, warehouse] of warehouses.entries()) {
+        for (var warehouse of sortedWarehouses) {
             var { maxValue, selectedItems } = knapsack01ForWarehouse(values, weights, warehouse.capacity);
             var totalWeight = 0;
 
@@ -261,7 +335,6 @@ function manageMultipleWarehouses(runKnapsack = false) {
             for (var idx of selectedItems) {
                 values.splice(idx, 1);
                 weights.splice(idx, 1);
-                itemIds.splice(idx, 1);
                 tempItems.splice(idx, 1);
             }
 
