@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knapsack Problem - Greedy Algorithm</title>
+    <link rel="stylesheet" href="DiTruyen.css">
+</head>
+<body>
+    <h1>Greedy Algorithm for Knapsack Problem</h1>
+
+    <form id="knapsackForm">
+        <label for="capacity">Tổng trọng lượng túi (capacity):</label>
+        <input type="number" id="capacity" name="capacity" required><br><br>
+
+        <label for="items">Nhập danh sách đồ vật (mỗi dòng: tên,giá trị,trọng lượng):</label><br>
+        <textarea id="items" name="items" rows="6" cols="50" placeholder="Ví dụ:
+Item 1,60,10
+Item 2,100,20
+Item 3,120,30" required></textarea><br><br>
+
+        <button type="submit">Tính toán</button>
+    </form>
+
+    <h2>Kết quả:</h2>
+    <pre id="output"></pre>
+
+    <script src="DiTruyen.js"></script>
+</body>
+</html>
