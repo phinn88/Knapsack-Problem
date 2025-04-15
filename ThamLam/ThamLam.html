@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Knapsack Problem - Greedy Algorithm</title>
-    <link rel="stylesheet" href="DiTruyen.css">
+    <link rel="stylesheet" href="ThamLam.css">
 </head>
 <body>
     <h1>Greedy Algorithm for Knapsack Problem</h1>
@@ -19,12 +19,19 @@ Item 1,60,10
 Item 2,100,20
 Item 3,120,30" required></textarea><br><br>
 
+        <label for="sortMethod">Chọn cách sắp xếp:</label>
+        <select id="sortMethod" name="sortMethod">
+            <option value="value">Giảm dần theo giá trị</option>
+            <option value="weight">Giảm dần theo trọng lượng</option>
+            <option value="ratio" selected>Giảm dần theo tỉ lệ giá trị/trọng lượng</option>
+        </select><br><br>
+
         <button type="submit">Tính toán</button>
     </form>
 
     <h2>Kết quả:</h2>
     <pre id="output"></pre>
 
-    <script src="DiTruyen.js"></script>
+    <script src="ThamLam.js"></script>
 </body>
 </html>
