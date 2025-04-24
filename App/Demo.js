@@ -3,50 +3,202 @@ var numItems;
 var warehouses = []; // Lưu danh sách kho: [{capacity, remainingCapacity, allocatedItems, index}, ...]
 var items = []; // Lưu danh sách hàng hóa: [{id, profit, weight}, ...]
 
-// Tạo bảng nhập liệu cho kho và hàng hóa
-function createInputTables() {
-    numWarehouses = parseInt(document.getElementById('numWarehouses').value);
-    numItems = parseInt(document.getElementById('numItems').value);
+// Hàm đọc và xử lý file CSV
+function loadCSVFile(event) {
+    const fileInput = document.getElementById('csvFileInput');
+    const file = fileInput.files[0];
 
-    if (isNaN(numWarehouses) || numWarehouses <= 0) {
-        alert('Please enter a valid number of warehouses (greater than 0).');
+    if (!file) {
+        alert('Please select a CSV file.');
         return;
     }
-    if (isNaN(numItems) || numItems <= 0) {
-        alert('Please enter a valid number of items (greater than 0).');
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        parseCSV(text);
+    };
+    reader.readAsText(file);
+}
+// xuất thông tin ra file csv
+function exportToCSV() {
+    // Kiểm tra nếu không có dữ liệu
+    if (!warehouses.length && !items.length) {
+        alert('No data to export. Please load or input data first.');
+        return;
+    }
+
+    // Tạo tiêu đề CSV
+    let csvContent = 'Type,Index/ID,Capacity/Profit,Weight\n';
+
+    // Thêm dữ liệu kho
+    for (let warehouse of warehouses) {
+        csvContent += `Warehouse,${warehouse.index},${warehouse.capacity},\n`;
+    }
+
+    // Thêm dữ liệu mặt hàng
+    for (let item of items) {
+        csvContent += `Item,${item.id},${item.profit},${item.weight}\n`;
+    }
+
+    // Tạo blob và URL để tải xuống
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'warehouse_data.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    alert('Data exported successfully to warehouse_data.csv');
+}
+
+// Hàm phân tích dữ liệu CSV
+function parseCSV(csvText) {
+    const lines = csvText.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.trim());
+
+    if (headers[0] !== 'Type' || headers[1] !== 'Index/ID' || headers[2] !== 'Capacity/Profit' || headers[3] !== 'Weight') {
+        alert('Invalid CSV format. Expected headers: Type,Index/ID,Capacity/Profit,Weight');
+        return;
+    }
+
+    warehouses = [];
+    items = [];
+
+    for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(',').map(cell => cell.trim());
+        const type = row[0];
+        const indexOrId = parseInt(row[1]);
+        const capacityOrProfit = parseInt(row[2]);
+        const weight = row[3] ? parseInt(row[3]) : null;
+
+        if (isNaN(indexOrId) || isNaN(capacityOrProfit)) {
+            alert(`Invalid data in row ${i + 1}.`);
+            return;
+        }
+
+        if (type === 'Warehouse') {
+            if (capacityOrProfit <= 0) {
+                alert(`Invalid capacity for Warehouse ${indexOrId} in row ${i + 1}.`);
+                return;
+            }
+            warehouses.push({
+                capacity: capacityOrProfit,
+                remainingCapacity: capacityOrProfit,
+                allocatedItems: [],
+                index: indexOrId
+            });
+        } else if (type === 'Item') {
+            if (isNaN(weight) || weight < 0 || capacityOrProfit < 0) {
+                alert(`Invalid profit or weight for Item ${indexOrId} in row ${i + 1}.`);
+                return;
+            }
+            items.push({
+                id: indexOrId,
+                profit: capacityOrProfit,
+                weight: weight
+            });
+        } else {
+            alert(`Invalid type in row ${i + 1}. Use "Warehouse" or "Item".`);
+            return;
+        }
+    }
+
+    numWarehouses = warehouses.length;
+    numItems = items.length;
+
+    console.log('Parsed CSV - Warehouses:', warehouses);
+    console.log('Parsed CSV - Items:', items);
+
+    document.getElementById('numWarehouses').value = numWarehouses;
+    document.getElementById('numItems').value = numItems;
+
+    createInputTables();
+    populateInputTables();
+    updateCurrentItemsTable();
+
+    alert('CSV file loaded successfully.');
+}
+
+// Hàm điền dữ liệu từ warehouses và items vào bảng nhập liệu
+function populateInputTables() {
+    // Điền dữ liệu cho bảng kho
+    const warehouseTable = document.getElementById('warehouseInputTable');
+    if (!warehouseTable) {
+        console.error('Warehouse table not found.');
+        return;
+    }
+    console.log('Populating warehouses:', warehouses);
+    for (let i = 0; i < warehouses.length; i++) {
+        const row = warehouseTable.rows[i + 1];
+        if (!row) {
+            console.error(`Row ${i + 1} not found in warehouse table.`);
+            continue;
+        }
+        const capacityInput = row.cells[1].querySelector('input');
+        if (capacityInput) {
+            capacityInput.value = warehouses[i].capacity || '';
+            console.log(`Set capacity for warehouse ${i}: ${warehouses[i].capacity}`);
+        } else {
+            console.error(`Capacity input not found for warehouse ${i}.`);
+        }
+    }
+
+    // Điền dữ liệu cho bảng hàng hóa
+    const itemTable = document.getElementById('itemInputTable');
+    if (!itemTable) {
+        console.error('Item table not found.');
+        return;
+    }
+    console.log('Populating items:', items);
+    for (let i = 0; i < items.length; i++) {
+        const row = itemTable.rows[i + 1];
+        if (!row) {
+            console.error(`Row ${i + 1} not found in item table.`);
+            continue;
+        }
+        const profitInput = row.cells[1].querySelector('input');
+        const weightInput = row.cells[2].querySelector('input');
+        if (profitInput && weightInput) {
+            profitInput.value = items[i].profit || '';
+            weightInput.value = items[i].weight || '';
+            console.log(`Set profit/weight for item ${i}: ${items[i].profit}/${items[i].weight}`);
+        } else {
+            console.error(`Input fields not found for item ${i}.`);
+        }
+    }
+}
+
+// Tạo bảng nhập liệu cho kho và hàng hóa
+function createInputTables() {
+    numWarehouses = parseInt(document.getElementById('numWarehouses').value) || 0;
+    numItems = parseInt(document.getElementById('numItems').value) || 0;
+
+    if (numWarehouses <= 0 || numItems <= 0) {
+        alert('Please enter a valid number of warehouses and items (greater than 0).');
         return;
     }
 
     // Tạo bảng cho kho
-    var warehouseHeader = '<table class="table table-bordered" id="warehouseInputTable"><tr><th scope="col">Warehouse</th><th scope="col">Capacity (kg)</th></tr>';
-    var warehouseBody = '';
-
-    for (var i = 0; i < numWarehouses; i++) {
-        warehouseBody += '<tr>';
-        warehouseBody += '<td>Warehouse ' + i + '</td>';
-        warehouseBody += '<td><input type="number" class="form-control capacity-input" placeholder="Capacity" min="0" required /></td>';
-        warehouseBody += '</tr>';
+    let warehouseHeader = '<table class="table table-bordered" id="warehouseInputTable"><tr><th scope="col">Warehouse</th><th scope="col">Capacity (kg)</th></tr>';
+    let warehouseBody = '';
+    for (let i = 0; i < numWarehouses; i++) {
+        warehouseBody += `<tr><td>Warehouse ${i}</td><td><input type="number" class="form-control capacity-input" placeholder="Capacity" min="0" required /></td></tr>`;
     }
-    var warehouseFooter = '</table>';
-    document.getElementById('warehouseTable').innerHTML = warehouseHeader + warehouseBody + warehouseFooter;
+    document.getElementById('warehouseTable').innerHTML = warehouseHeader + warehouseBody + '</table>';
 
     // Tạo bảng cho hàng hóa
-    var itemHeader = '<table class="table table-bordered" id="itemInputTable"><tr><th scope="col">Item</th><th scope="col">Profit</th><th scope="col">Weight (kg)</th></tr>';
-    var itemBody = '';
-
-    for (var i = 0; i < numItems; i++) {
-        itemBody += '<tr>';
-        itemBody += '<td>Item ' + i + '</td>';
-        itemBody += '<td><input type="number" class="form-control profit-input" placeholder="Profit" min="0" required /></td>';
-        itemBody += '<td><input type="number" class="form-control weight-input" placeholder="Weight" min="0" required /></td>';
-        itemBody += '</tr>';
+    let itemHeader = '<table class="table table-bordered" id="itemInputTable"><tr><th scope="col">Item</th><th scope="col">Profit</th><th scope="col">Weight (kg)</th></tr>';
+    let itemBody = '';
+    for (let i = 0; i < numItems; i++) {
+        itemBody += `<tr><td>Item ${i}</td><td><input type="number" class="form-control profit-input" placeholder="Profit" min="0" required /></td><td><input type="number" class="form-control weight-input" placeholder="Weight" min="0" required /></td></tr>`;
     }
-    var itemFooter = '</table>';
-    document.getElementById('itemTable').innerHTML = itemHeader + itemBody + itemFooter;
+    document.getElementById('itemTable').innerHTML = itemHeader + itemBody + '</table>';
 
-    // Xóa dữ liệu cũ và ẩn các phần nhập liệu
-    warehouses = [];
-    items = [];
+    // Không xóa dữ liệu warehouses và items, chỉ cập nhật giao diện
     document.getElementById('resultSection').style.visibility = 'hidden';
     document.getElementById('multipleWarehousesResult').innerHTML = '';
     document.getElementById('kp01ResultantProfit').innerHTML = '';
@@ -55,6 +207,8 @@ function createInputTables() {
     document.getElementById('removeItemSection').style.display = 'none';
     document.getElementById('addWarehouseSection').style.display = 'none';
     document.getElementById('removeWarehouseSection').style.display = 'none';
+
+    console.log('Input tables created:', numWarehouses, 'warehouses,', numItems, 'items');
 }
 
 // Thu thập dữ liệu và tính toán ban đầu
@@ -273,13 +427,31 @@ function recalculate() {
 // Cập nhật kết quả kho mà không chạy Knapsack
 function updateWarehouseResults() {
     var totalValue = 0;
+    var totalRemainingCapacity = 0;
+    var totalUnallocatedWeight = 0; // Biến mới để lưu tổng khối lượng hàng hóa không phân bổ
     var resultHtml = '<h3>Warehouse Allocation Results</h3>';
 
-    // Sắp xếp lại kho theo index để hiển thị đúng thứ tự
+    // Tạo tập hợp các ID mặt hàng được phân bổ
+    var allocatedItemIds = new Set();
+    for (var warehouse of warehouses) {
+        for (var item of warehouse.allocatedItems) {
+            allocatedItemIds.add(item.id);
+        }
+    }
+
+    // Tính tổng trọng lượng của các mặt hàng không được phân bổ
+    for (var item of items) {
+        if (!allocatedItemIds.has(item.id)) {
+            totalUnallocatedWeight += item.weight;
+        }
+    }
+
+    // Sắp xếp kho theo index để hiển thị đúng thứ tự
     var sortedWarehouses = [...warehouses].sort((a, b) => a.index - b.index);
     for (var warehouse of sortedWarehouses) {
         var warehouseValue = warehouse.allocatedItems.reduce((sum, item) => sum + item.profit, 0);
         totalValue += warehouseValue;
+        totalRemainingCapacity += warehouse.remainingCapacity;
 
         var warehouseHtml = `<h4>Warehouse ${warehouse.index} (Capacity: ${warehouse.capacity} kg)</h4>`;
         warehouseHtml += '<table class="table table-bordered">';
@@ -298,7 +470,11 @@ function updateWarehouseResults() {
         resultHtml += warehouseHtml;
     }
 
+    // Thêm tổng dung tích còn thừa, tổng khối lượng không phân bổ, và tổng lợi nhuận
+    resultHtml += `<h3>Total Remaining Capacity: ${totalRemainingCapacity} kg</h3>`;
+    resultHtml += `<h3>Total Unallocated Items Weight: ${totalUnallocatedWeight} kg</h3>`;
     resultHtml += `<h3>Total Maximum Profit: ${totalValue}</h3>`;
+
     document.getElementById('multipleWarehousesResult').innerHTML = resultHtml;
     document.getElementById('kp01ResultantProfit').innerHTML = totalValue;
     document.getElementById('resultSection').style.visibility = 'visible';

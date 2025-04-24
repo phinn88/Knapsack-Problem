@@ -29,7 +29,14 @@
             </div>
             <button class="btn btn-primary mt-3" onclick="createInputTables()">Generate Input Tables</button>
         </div>
-
+            <!-- Nhập số kho và hàng hóa từ file csv-->
+        <div class="mb-3">
+            <label for="csvFileInput" class="form-label">Upload CSV File:</label>
+            <input type="file" id="csvFileInput" accept=".csv" class="form-control" style="max-width: 300px;">
+            <div class="btn-container">
+                <button class="btn btn-secondary mt-2" onclick="loadCSVFile()">Load CSV</button>
+            </div>
+        </div>
         <!-- Bảng nhập liệu kho -->
         <div class="section" id="warehouseTable"></div>
 
@@ -39,6 +46,7 @@
         <!-- Nút tính toán -->
         <div class="section">
             <button class="btn btn-success" onclick="generateResult()">Calculate Allocation</button>
+            <button class="btn btn-info" onclick="exportToCSV()">Export to CSV</button>
         </div>
 
         <!-- Thêm hàng hóa -->
