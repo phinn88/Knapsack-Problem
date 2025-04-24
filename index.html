@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knapsack Problem Solver</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <h1>Knapsack Problem Solver</h1>
+    <div class="container">
+        <div class="problem-section">
+            <h2>Solve Knapsack Problem</h2>
+            <div class="input-group">
+                <label for="problemType">Problem Type:</label>
+                <select id="problemType" onchange="updateForm()">
+                    <option value="zeroOne">0-1 Knapsack</option>
+                    <option value="fractional">Fractional Knapsack</option>
+                    <option value="multidimensional">Multidimensional Knapsack</option>
+                    <option value="multiple">Multiple Knapsack</option>
+                    <option value="quadratic">Quadratic Knapsack</option>
+                </select>
+                <label for="method">Method:</label>
+                <select id="method" onchange="updateForm()">
+                    <option value="dp">Dynamic Programming</option>
+                    <option value="greedy">Greedy</option>
+                    <option value="genetic">Genetic Algorithm</option>
+                </select>
+                <div id="inputForm"></div>
+                <button onclick="solveProblem()">Solve</button>
+            </div>
+            <div class="output" id="output"></div>
+        </div>
+    </div>
+    <script type="module">
+        // Inline import to ensure module loading
+        import { updateForm, solveProblem } from './js/main.js';
+        window.updateForm = updateForm;
+        window.solveProblem = solveProblem;
+        updateForm(); // Call immediately to render initial form
+    </script>
+</body>
+
+</html>
